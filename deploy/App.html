@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Feature Sizing Accuracy Chart</title>
+
+    <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
+
+    <script type="text/javascript">
+        Rally.onReady(function () {
+                Ext.define("Calculator",{config:{sizes:[]},constructor:function(config){this.initConfig(config)},prepareChartData:function(store){var groupedData=this._groupData(store.getRange()),categories=_.keys(groupedData),groupedCycleTimes=_.transform(groupedData,function(result,pis,group){result[group]=this._computeCycleTimes(pis)},{},this),cycleTimeData=_.map(groupedCycleTimes,function(cycleTimes,key){return[key,this._computePercentile(.5,cycleTimes)]},this),percentileData=_.map(groupedCycleTimes,function(cycleTimes){return this._computePercentiles(cycleTimes)},this);return{categories:categories,series:[{name:"Cycle Time (Median)",type:"column",data:cycleTimeData},{name:"P25 - P75",type:"errorbar",data:percentileData,showInLegend:!0}]}},_computeCycleTimes:function(pis){return _.sortBy(_.map(pis,function(pi){var startDate=pi.get("ActualStartDate"),endDate=pi.get("ActualEndDate");return moment(endDate).diff(moment(startDate),"days")}))},_computePercentiles:function(cycleTimes){var p25=this._computePercentile(.25,cycleTimes),p75=this._computePercentile(.75,cycleTimes);return p25===p75?[]:[p25,p75]},_computePercentile:function(p,cycleTimes){var index=p*cycleTimes.length,floorIndex=Math.floor(index);return 1===cycleTimes.length?cycleTimes[0]:floorIndex===index?(cycleTimes[floorIndex]+cycleTimes[floorIndex-1])/2:cycleTimes[floorIndex]},_groupData:function(records){return _.groupBy(records,function(record){var endDate=record.get("ActualEndDate");return"month"===this.bucketBy?moment(endDate).startOf("month").format("MMM 'YY"):"quarter"===this.bucketBy?moment(endDate).startOf("quarter").format("YYYY [Q]Q"):"release"===this.bucketBy?record.get("Release")._refObjectName:"year"===this.bucketBy?moment(endDate).startOf("year").format("YYYY"):void 0},this)}});
+                Ext.define("FeatureSizingAccuracyChartApp",{extend:"Rally.app.App",componentCls:"app",layout:"fit",autoScroll:!1,requires:["Calculator"],config:{defaultSettings:{query:""}},launch:function(){Rally.data.wsapi.ModelFactory.getModel({type:"PortfolioItem"}).then({success:this._loadMetadata,scope:this})},_getLowestLevelPI:function(){return Ext.create("Rally.data.wsapi.Store",{model:"TypeDefinition",filters:[{property:"Creatable",value:!0},{property:"Parent.Name",value:"Portfolio Item"},{property:"Ordinal",value:0}]}).load().then({success:function(records){return records[0].get("TypePath")},scope:this})},_getSizes:function(){return this.model.getField("PreliminaryEstimate").getAllowedValueStore().load().then({success:function(sizes){return _.compact(_.invoke(sizes,"get","StringValue"))},scope:this})},_loadMetadata:function(model){return this.model=model,Deft.Promise.all([this._getLowestLevelPI(),this._getSizes()]).then({success:this._onMetaRetrieved,scope:this})},_onMetaRetrieved:function(meta){this.piType=meta[0],this.sizes=meta[1],this._addChart()},_addChart:function(){var context=this.getContext(),whiteListFields=["Milestones","Tags"],modelNames=[this.model.typePath],gridBoardConfig={xtype:"rallygridboard",toggleState:"chart",chartConfig:this._getChartConfig(),plugins:[{ptype:"rallygridboardinlinefiltercontrol",showInChartMode:!0,inlineFilterButtonConfig:{stateful:!0,stateId:context.getScopedStateId("filters"),filterChildren:!1,modelNames:modelNames,inlineFilterPanelConfig:{quickFilterPanelConfig:{defaultFields:[],addQuickFilterConfig:{whiteListFields:whiteListFields}},advancedFilterPanelConfig:{advancedFilterRowsConfig:{propertyFieldConfig:{whiteListFields:whiteListFields}}}}}}],context:context,modelNames:modelNames,storeConfig:{filters:this._getFilters()}};this.add(gridBoardConfig)},_getChartConfig:function(){return{xtype:"rallychart",chartColors:["#937bb7"],storeType:"Rally.data.wsapi.Store",storeConfig:{context:this.getContext().getDataContext(),limit:1/0,fetch:this._getChartFetch(),sorters:this._getChartSort(),pageSize:2e3,model:this.piType},calculatorType:"Calculator",calculatorConfig:{sizes:this.sizes},chartConfig:{chart:{type:"column"},legend:{enabled:!0},title:{text:""},yAxis:{min:0,title:{text:"Days"}},plotOptions:{column:{dataLabels:{enabled:!1}}}}}},onTimeboxScopeChange:function(){this.callParent(arguments);var gridBoard=this.down("rallygridboard");gridBoard&&gridBoard.destroy(),this._addChart()},_getChartFetch:function(){return["ActualStartDate","ActualEndDate","Release"]},_getChartSort:function(){return"release"===this.getSetting("bucketBy")?[{property:"Release.ReleaseDate",direction:"ASC"}]:[{property:"ActualEndDate",direction:"ASC"}]},_getFilters:function(){var queries=[{property:"ActualEndDate",operator:"!=",value:null}];"release"===this.getSetting("bucketBy")&&queries.push({property:"Release",operator:"!=",vaue:null});var timeboxScope=this.getContext().getTimeboxScope();return timeboxScope&&timeboxScope.isApplicable(this.model)&&queries.push(timeboxScope.getQueryFilter()),this.getSetting("query")&&queries.push(Rally.data.QueryFilter.fromQueryString(this.getSetting("query"))),queries}});
+
+            Rally.launchApp('FeatureSizingAccuracyChartApp', {
+                name:"Feature Sizing Accuracy Chart",
+	            parentRepos:""
+            });
+
+        });
+    </script>
+
+
+    <style type="text/css">
+        
+    </style>
+</head>
+<body>
+</body>
+</html>
