@@ -10,24 +10,24 @@ Ext.define('Calculator', {
 
     prepareChartData: function (store) {
         var groupedData = this._groupData(store.getRange()),
-            categories = _.keys(groupedData),
-            groupedCycleTimes = _.transform(groupedData, function (result, pis, group) {
-                result[group] = this._computeCycleTimes(pis);
+            categories = this.sizes,
+            groupedPlanEstimateTotals = _.transform(groupedData, function (result, pis, group) {
+                result[group] = this._gatherTotals(pis);
             }, {}, this),
-            cycleTimeData = _.map(groupedCycleTimes, function (cycleTimes, key) {
-                return [key, this._computePercentile(0.5, cycleTimes)];
+            totalsData = _.map(groupedPlanEstimateTotals, function (totals, key) {
+                return [key, this._computePercentile(0.5, totals)];
             }, this),
-            percentileData = _.map(groupedCycleTimes, function(cycleTimes) {
-                return this._computePercentiles(cycleTimes);
+            percentileData = _.map(groupedPlanEstimateTotals, function(totals) {
+                return this._computePercentiles(totals);
             }, this);
 
         return {
             categories: categories,
             series: [
                 {
-                    name: 'Cycle Time (Median)',
+                    name: 'Leaf Story Plan Estimate Total (Median)',
                     type: 'column',
-                    data: cycleTimeData
+                    data: totalsData
                 },
                 {
                     name: 'P25 - P75',
@@ -39,11 +39,9 @@ Ext.define('Calculator', {
         };
     },
 
-    _computeCycleTimes: function (pis) {
+    _gatherTotals: function (pis) {
         return _.sortBy(_.map(pis, function (pi) {
-            var startDate = pi.get('ActualStartDate'),
-                endDate = pi.get('ActualEndDate');
-            return moment(endDate).diff(moment(startDate), 'days');
+            return pi.get('LeafStoryPlanEstimateTotal');
         }));
     },
 
@@ -73,16 +71,7 @@ Ext.define('Calculator', {
 
     _groupData: function (records) {
         return _.groupBy(records, function (record) {
-            var endDate = record.get('ActualEndDate');
-            if (this.bucketBy === 'month') {
-                return moment(endDate).startOf('month').format('MMM \'YY');
-            } else if (this.bucketBy === 'quarter') {
-                return moment(endDate).startOf('quarter').format('YYYY [Q]Q');
-            } else if (this.bucketBy === 'release') {
-                return record.get('Release')._refObjectName;
-            } else if (this.bucketBy === 'year') {
-                return moment(endDate).startOf('year').format('YYYY');
-            }
-        }, this);
-    },
+            return record.get('PreliminaryEstimate').Name;
+        });
+    }
 });

@@ -15,7 +15,7 @@ Ext.define('FeatureSizingAccuracyChartApp', {
         }
     },
 
-    launch: function() {
+    launch: function () {
         Rally.data.wsapi.ModelFactory.getModel({
             type: 'PortfolioItem',
         }).then({
@@ -24,32 +24,32 @@ Ext.define('FeatureSizingAccuracyChartApp', {
         });
     },
 
-    _getLowestLevelPI: function() {
+    _getLowestLevelPI: function () {
         return Ext.create('Rally.data.wsapi.Store', {
             model: 'TypeDefinition',
             filters: [
-                { property: 'Creatable', value: true }, 
+                { property: 'Creatable', value: true },
                 { property: 'Parent.Name', value: 'Portfolio Item' },
                 { property: 'Ordinal', value: 0 }
             ]
         }).load().then({
-            success: function(records) {
+            success: function (records) {
                 return records[0].get('TypePath');
             },
             scope: this
         });
     },
 
-    _getSizes: function() {
+    _getSizes: function () {
         return this.model.getField('PreliminaryEstimate').getAllowedValueStore().load().then({
-            success: function(sizes) {
+            success: function (sizes) {
                 return _.compact(_.invoke(sizes, 'get', 'StringValue'));
             },
             scope: this
         });
     },
-    
-    _loadMetadata: function(model) {
+
+    _loadMetadata: function (model) {
         this.model = model;
         return Deft.Promise.all([
             this._getLowestLevelPI(),
@@ -60,13 +60,13 @@ Ext.define('FeatureSizingAccuracyChartApp', {
         });
     },
 
-    _onMetaRetrieved: function(meta) {
+    _onMetaRetrieved: function (meta) {
         this.piType = meta[0];
         this.sizes = meta[1];
         this._addChart();
     },
 
-    _addChart: function() {
+    _addChart: function () {
         var context = this.getContext(),
             whiteListFields = ['Milestones', 'Tags'],
             modelNames = [this.model.typePath],
@@ -75,7 +75,7 @@ Ext.define('FeatureSizingAccuracyChartApp', {
                 toggleState: 'chart',
                 chartConfig: this._getChartConfig(),
                 plugins: [{
-                    ptype:'rallygridboardinlinefiltercontrol',
+                    ptype: 'rallygridboardinlinefiltercontrol',
                     showInChartMode: true,
                     inlineFilterButtonConfig: {
                         stateful: true,
@@ -86,16 +86,16 @@ Ext.define('FeatureSizingAccuracyChartApp', {
                             quickFilterPanelConfig: {
                                 defaultFields: [],
                                 addQuickFilterConfig: {
-                                   whiteListFields: whiteListFields
+                                    whiteListFields: whiteListFields
                                 }
                             },
                             advancedFilterPanelConfig: {
-                               advancedFilterRowsConfig: {
-                                   propertyFieldConfig: {
-                                       whiteListFields: whiteListFields
-                                   }
-                               }
-                           }
+                                advancedFilterRowsConfig: {
+                                    propertyFieldConfig: {
+                                        whiteListFields: whiteListFields
+                                    }
+                                }
+                            }
                         }
                     }
                 }],
@@ -109,10 +109,21 @@ Ext.define('FeatureSizingAccuracyChartApp', {
         this.add(gridBoardConfig);
     },
 
-    _getChartConfig: function() {
+    _getChartConfig: function () {
         return {
             xtype: 'rallychart',
-            chartColors: ['#937bb7'],
+            chartColors: [
+                "#FF8200", // $orange
+                "#F6A900", // $gold
+                "#FAD200", // $yellow
+                "#8DC63F", // $lime
+                "#1E7C00", // $green_dk
+                "#337EC6", // $blue_link
+                "#005EB8", // $blue
+                "#7832A5", // $purple,
+                "#DA1884",  // $pink,
+                "#C0C0C0" // $grey4
+            ],
             storeType: 'Rally.data.wsapi.Store',
             storeConfig: {
                 context: this.getContext().getDataContext(),
@@ -135,21 +146,22 @@ Ext.define('FeatureSizingAccuracyChartApp', {
                 yAxis: {
                     min: 0,
                     title: {
-                        text: 'Days'
+                        text: this.getContext().getWorkspace().WorkspaceConfiguration.ReleaseEstimateUnitName
                     }
                 },
                 plotOptions: {
                     column: {
                         dataLabels: {
                             enabled: false
-                        }
+                        },
+                        colorByPoint: true,
                     }
                 }
             }
         };
     },
 
-    onTimeboxScopeChange: function() {
+    onTimeboxScopeChange: function () {
         this.callParent(arguments);
 
         var gridBoard = this.down('rallygridboard');
@@ -159,32 +171,20 @@ Ext.define('FeatureSizingAccuracyChartApp', {
         this._addChart();
     },
 
-    _getChartFetch: function() {
-        return ['ActualStartDate', 'ActualEndDate', 'Release'];
+    _getChartFetch: function () {
+        return ['PreliminaryEstimate', 'Name', 'Value', 'LeafStoryPlanEstimateTotal'];
     },
 
-    _getChartSort: function() {
-        if (this.getSetting('bucketBy') === 'release') {
-            return [{ property: 'Release.ReleaseDate', direction: 'ASC' }];
-        } else {
-            return [{ property: 'ActualEndDate', direction: 'ASC' }];
-        }
+    _getChartSort: function () {
+        return [];
     },
 
-    _getFilters: function() {
+    _getFilters: function () {
         var queries = [{
-            property: 'ActualEndDate',
+            property: 'PreliminaryEstimate',
             operator: '!=',
             value: null
         }];
-
-        if (this.getSetting('bucketBy') === 'release') {
-            queries.push({
-                property: 'Release',
-                operator: '!=',
-                vaue: null
-            });
-        }
 
         var timeboxScope = this.getContext().getTimeboxScope();
         if (timeboxScope && timeboxScope.isApplicable(this.model)) {
