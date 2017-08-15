@@ -15,6 +15,12 @@ Ext.define('FeatureSizingAccuracyChartApp', {
         }
     },
 
+    getSettingsFields: function() {
+        return [
+            { type: 'query' }
+        ];
+    },
+
     launch: function () {
         Rally.data.wsapi.ModelFactory.getModel({
             type: 'PortfolioItem',
