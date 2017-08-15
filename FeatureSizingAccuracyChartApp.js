@@ -116,13 +116,11 @@ Ext.define('FeatureSizingAccuracyChartApp', {
                 "#FF8200", // $orange
                 "#F6A900", // $gold
                 "#FAD200", // $yellow
-                "#8DC63F", // $lime
                 "#1E7C00", // $green_dk
                 "#337EC6", // $blue_link
                 "#005EB8", // $blue
                 "#7832A5", // $purple,
-                "#DA1884",  // $pink,
-                "#C0C0C0" // $grey4
+                "#DA1884",  // $pink
             ],
             storeType: 'Rally.data.wsapi.Store',
             storeConfig: {
@@ -154,7 +152,7 @@ Ext.define('FeatureSizingAccuracyChartApp', {
                         dataLabels: {
                             enabled: false
                         },
-                        colorByPoint: true,
+                        colorByPoint: true
                     }
                 }
             }
@@ -176,7 +174,7 @@ Ext.define('FeatureSizingAccuracyChartApp', {
     },
 
     _getChartSort: function () {
-        return [];
+        return [{ property: 'PreliminaryEstimateValue', direction: 'ASC'}];
     },
 
     _getFilters: function () {
