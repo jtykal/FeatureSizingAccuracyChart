@@ -46,29 +46,16 @@ Ext.define('FeatureSizingAccuracyChartApp', {
         });
     },
 
-    _getSizes: function () {
-        return this.model.getField('PreliminaryEstimate').getAllowedValueStore().load().then({
-            success: function (sizes) {
-                return _.compact(_.invoke(sizes, 'get', 'StringValue'));
-            },
-            scope: this
-        });
-    },
-
     _loadMetadata: function (model) {
         this.model = model;
-        return Deft.Promise.all([
-            this._getLowestLevelPI(),
-            this._getSizes()
-        ]).then({
+        return this._getLowestLevelPI().then({
             success: this._onMetaRetrieved,
             scope: this
         });
     },
 
-    _onMetaRetrieved: function (meta) {
-        this.piType = meta[0];
-        this.sizes = meta[1];
+    _onMetaRetrieved: function (piType) {
+        this.piType = piType;
         this._addChart();
     },
 

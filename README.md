@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/krmorse/FeatureSizingAccuracyChart.png?branch=master)](https://travis-ci.org/krmorse/FeatureSizingAccuracyChart)
 
-This app is designed to be used to evaluate the accuracy of initial feature sizing vs. their final story estimate rollups. The median leaf story plan estimate total is plotted as a column for each available Preliminary Estimate value.  Whiskers are included for the 25th and 75th percentiles. The standard filtering component is also included to enable further slicing and dicing of data.
+This app is designed to be used to evaluate the accuracy of initial feature sizing vs. their final story estimate rollups. The average leaf story plan estimate total is plotted as a column for each available Preliminary Estimate value.  Whiskers are included for the 25th and 75th percentiles. The standard filtering component is also included to enable further slicing and dicing of data.
 
 ![](images/screenshot.png)
 

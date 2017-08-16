@@ -1,21 +1,13 @@
 Ext.define('Calculator', {
 
-    config: {
-        sizes: []
-    },
-
-    constructor: function (config) {
-        this.initConfig(config);
-    },
-
     prepareChartData: function (store) {
         var groupedData = this._groupData(store.getRange()),
-            categories = this.sizes,
+            categories = _.keys(groupedData),
             groupedPlanEstimateTotals = _.transform(groupedData, function (result, pis, group) {
                 result[group] = this._gatherTotals(pis);
             }, {}, this),
             totalsData = _.map(groupedPlanEstimateTotals, function (totals, key) {
-                return [key, this._computePercentile(0.5, totals)];
+                return [key, this._computeMean(totals)];
             }, this),
             percentileData = _.map(groupedPlanEstimateTotals, function(totals) {
                 return this._computePercentiles(totals);
@@ -25,7 +17,7 @@ Ext.define('Calculator', {
             categories: categories,
             series: [
                 {
-                    name: 'Leaf Story Plan Estimate Total (Median)',
+                    name: 'Leaf Story Plan Estimate Total (Mean)',
                     type: 'column',
                     data: totalsData
                 },
@@ -39,15 +31,22 @@ Ext.define('Calculator', {
         };
     },
 
+    _computeMean: function(totals) {
+        var total = _.reduce(totals, function(accum, val) {
+            return accum + val;
+        }, 0);
+        return Math.round(total / totals.length);
+    },
+
     _gatherTotals: function (pis) {
         return _.sortBy(_.map(pis, function (pi) {
             return pi.get('LeafStoryPlanEstimateTotal');
         }));
     },
 
-    _computePercentiles: function(cycleTimes) {
-        var p25 = this._computePercentile(0.25, cycleTimes), 
-            p75 = this._computePercentile(0.75, cycleTimes);
+    _computePercentiles: function(totals) {
+        var p25 = this._computePercentile(0.25, totals), 
+            p75 = this._computePercentile(0.75, totals);
 
         if (p25 === p75) {
             return [];
@@ -56,16 +55,16 @@ Ext.define('Calculator', {
         }
     },
 
-    _computePercentile: function (p, cycleTimes) {
-        var index = p * cycleTimes.length,
+    _computePercentile: function (p, totals) {
+        var index = p * totals.length,
             floorIndex = Math.floor(index);
 
-        if (cycleTimes.length === 1) {
-            return cycleTimes[0];
+        if (totals.length === 1) {
+            return totals[0];
         } else if(floorIndex === index) {
-            return (cycleTimes[floorIndex] + cycleTimes[floorIndex - 1]) / 2;
+            return (totals[floorIndex] + totals[floorIndex - 1]) / 2;
         } else {
-            return cycleTimes[floorIndex];
+            return totals[floorIndex];
         }
     },
 
