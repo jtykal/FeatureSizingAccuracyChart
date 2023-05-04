@@ -23,7 +23,7 @@ Ext.define('FeatureSizingAccuracyChartApp', {
 
     launch: function () {
         Rally.data.wsapi.ModelFactory.getModel({
-            type: 'PortfolioItem',
+            type: 'PortfolioItem/Feature',
         }).then({
             success: this._onModelLoaded,
             scope: this
@@ -54,7 +54,7 @@ Ext.define('FeatureSizingAccuracyChartApp', {
                         modelNames: ['portfolioitem/feature'],
                         inlineFilterPanelConfig: {
                             quickFilterPanelConfig: {
-                                defaultFields: ['Release'],
+                                //defaultFields: ['Release'],
                                 addQuickFilterConfig: {
                                     whiteListFields: whiteListFields
                                 }
@@ -97,8 +97,8 @@ Ext.define('FeatureSizingAccuracyChartApp', {
             storeConfig: {
                 context: this.getContext().getDataContext(),
                 limit: Infinity,
-                fetch: this._getChartFetch(),
-                sorters: this._getChartSort(),
+                fetch: ['PreliminaryEstimate', 'Name', 'Value', 'LeafStoryPlanEstimateTotal'],
+                sorters: [{ property: 'PreliminaryEstimateValue', direction: 'ASC' }],
                 pageSize: 2000,
                 model: 'PortfolioItem/Feature'
             },
@@ -115,8 +115,8 @@ Ext.define('FeatureSizingAccuracyChartApp', {
                 yAxis: {
                     min: 0,
                     title: {
-                        text: this.getContext().getWorkspace().WorkspaceConfiguration.ReleaseEstimateUnitName
-                    }
+                        text: 'Story Points'
+}
                 },
                 plotOptions: {
                     column: {
@@ -141,14 +141,6 @@ Ext.define('FeatureSizingAccuracyChartApp', {
         this._addChart();
     },
 
-    _getChartFetch: function () {
-        return ['PreliminaryEstimate', 'Name', 'Value', 'LeafStoryPlanEstimateTotal', 'Release'];
-    },
-
-    _getChartSort: function () {
-        return [{ property: 'PreliminaryEstimateValue', direction: 'ASC' }];
-    },
-
     _getFilters: function () {
         var queries = [{
             property: 'PreliminaryEstimate',
@@ -160,9 +152,8 @@ Ext.define('FeatureSizingAccuracyChartApp', {
         if (timeboxScope && timeboxScope.isApplicable(this.model)) {
             queries.push(timeboxScope.getQueryFilter());
         }
+   
         if (this.getSetting('query')) {
-            // queries.push(Rally.data.QueryFilter.fromQueryString(this.getSetting('query')));
-            // Above line replaced with the two below (from CustomChart app) - no change
             var querySetting = this.getSetting('query').replace(/\{user\}/g, this.getContext().getUser()._ref);
             queries.push(Rally.data.QueryFilter.fromQueryString(querySetting));
         }

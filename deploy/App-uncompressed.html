@@ -18,8 +18,8 @@
             totalsData = _.map(groupedPlanEstimateTotals, function (totals, key) {
                 return [key, this._computeMean(totals)];
             }, this),
-            percentileData = _.map(groupedPlanEstimateTotals, function(totals) {
-                return this._computePercentiles(totals);
+            minmaxData = _.map(groupedPlanEstimateTotals, function(totals) {
+                return this._computeMinMax(totals);
             }, this);
 
         return {
@@ -31,9 +31,9 @@
                     data: totalsData
                 },
                 {
-                    name: 'P25 - P75',
+                    name: 'min - max',
                     type: 'errorbar',
-                    data: percentileData,
+                    data: minmaxData,
                     showInLegend: true
                 }
             ]
@@ -53,27 +53,13 @@
         }));
     },
 
-    _computePercentiles: function(totals) {
-        var p25 = this._computePercentile(0.25, totals), 
-            p75 = this._computePercentile(0.75, totals);
-
-        if (p25 === p75) {
+    _computeMinMax: function(totals) {
+        var min = totals[0], 
+            max = totals[totals.length-1];
+        if (min === max) {
             return [];
         } else {
-            return [p25, p75];
-        }
-    },
-
-    _computePercentile: function (p, totals) {
-        var index = p * totals.length,
-            floorIndex = Math.floor(index);
-
-        if (totals.length === 1) {
-            return totals[0];
-        } else if(floorIndex === index) {
-            return (totals[floorIndex] + totals[floorIndex - 1]) / 2;
-        } else {
-            return totals[floorIndex];
+            return [min, max];
         }
     },
 
@@ -109,7 +95,7 @@
 
     launch: function () {
         Rally.data.wsapi.ModelFactory.getModel({
-            type: 'PortfolioItem',
+            type: 'PortfolioItem/Feature',
         }).then({
             success: this._onModelLoaded,
             scope: this
@@ -140,7 +126,7 @@
                         modelNames: ['portfolioitem/feature'],
                         inlineFilterPanelConfig: {
                             quickFilterPanelConfig: {
-                                defaultFields: ['Release'],
+                                //defaultFields: ['Release'],
                                 addQuickFilterConfig: {
                                     whiteListFields: whiteListFields
                                 }
@@ -183,8 +169,8 @@
             storeConfig: {
                 context: this.getContext().getDataContext(),
                 limit: Infinity,
-                fetch: this._getChartFetch(),
-                sorters: this._getChartSort(),
+                fetch: ['PreliminaryEstimate', 'Name', 'Value', 'LeafStoryPlanEstimateTotal'],
+                sorters: [{ property: 'PreliminaryEstimateValue', direction: 'ASC' }],
                 pageSize: 2000,
                 model: 'PortfolioItem/Feature'
             },
@@ -201,8 +187,8 @@
                 yAxis: {
                     min: 0,
                     title: {
-                        text: this.getContext().getWorkspace().WorkspaceConfiguration.ReleaseEstimateUnitName
-                    }
+                        text: 'Story Points'
+}
                 },
                 plotOptions: {
                     column: {
@@ -227,14 +213,6 @@
         this._addChart();
     },
 
-    _getChartFetch: function () {
-        return ['PreliminaryEstimate', 'Name', 'Value', 'LeafStoryPlanEstimateTotal', 'Release'];
-    },
-
-    _getChartSort: function () {
-        return [{ property: 'PreliminaryEstimateValue', direction: 'ASC' }];
-    },
-
     _getFilters: function () {
         var queries = [{
             property: 'PreliminaryEstimate',
@@ -246,9 +224,8 @@
         if (timeboxScope && timeboxScope.isApplicable(this.model)) {
             queries.push(timeboxScope.getQueryFilter());
         }
+   
         if (this.getSetting('query')) {
-            // queries.push(Rally.data.QueryFilter.fromQueryString(this.getSetting('query')));
-            // Above line replaced with the two below (from CustomChart app) - no change
             var querySetting = this.getSetting('query').replace(/\{user\}/g, this.getContext().getUser()._ref);
             queries.push(Rally.data.QueryFilter.fromQueryString(querySetting));
         }
@@ -260,7 +237,7 @@
             Rally.launchApp('FeatureSizingAccuracyChartApp', {
                 name:"Feature Sizing Accuracy Chart",
                 parentRepos:"",
-                version:"1.0.0"
+                version:"2.0.0"
             });
 
         });
