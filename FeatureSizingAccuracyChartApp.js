@@ -31,6 +31,7 @@ Ext.define('FeatureSizingAccuracyChartApp', {
     },
 
     _getLowestLevelPI: function () {
+        console.log('_getLowestLevelPI');
         return Ext.create('Rally.data.wsapi.Store', {
             model: 'TypeDefinition',
             filters: [
@@ -48,6 +49,7 @@ Ext.define('FeatureSizingAccuracyChartApp', {
 
     _loadMetadata: function (model) {
         this.model = model;
+        console.log('_loadMetadata:  this.model=',this.model);
         return this._getLowestLevelPI().then({
             success: this._onMetaRetrieved,
             scope: this
@@ -55,14 +57,16 @@ Ext.define('FeatureSizingAccuracyChartApp', {
     },
 
     _onMetaRetrieved: function (piType) {
+        console.log('_onMetaRetrieved, piType=',piType);
         this.piType = piType;
         this._addChart();
     },
 
     _addChart: function () {
+        console.log('_addChart');
         var context = this.getContext(),
             whiteListFields = ['Milestones', 'Tags'],
-            modelNames = [this.model.typePath],
+            //modelNames = [this.model.typePath],
             gridBoardConfig = {
                 xtype: 'rallygridboard',
                 toggleState: 'chart',
@@ -74,10 +78,10 @@ Ext.define('FeatureSizingAccuracyChartApp', {
                         stateful: true,
                         stateId: context.getScopedStateId('filters'),
                         filterChildren: false,
-                        modelNames: modelNames,
+                        modelNames: ['portfolioitem/feature'],
                         inlineFilterPanelConfig: {
                             quickFilterPanelConfig: {
-                                defaultFields: [],
+                                defaultFields: ['Release'],
                                 addQuickFilterConfig: {
                                     whiteListFields: whiteListFields
                                 }
@@ -93,16 +97,17 @@ Ext.define('FeatureSizingAccuracyChartApp', {
                     }
                 }],
                 context: context,
-                modelNames: modelNames,
+                modelNames: ['portfolioitem/feature'],
                 storeConfig: {
                     filters: this._getFilters()
                 }
             };
-
+        //console.log('_addChart, modelNames=',modelNames);
         this.add(gridBoardConfig);
     },
 
     _getChartConfig: function () {
+        console.log('_getChartConfig');
         return {
             xtype: 'rallychart',
             chartColors: [
@@ -124,7 +129,7 @@ Ext.define('FeatureSizingAccuracyChartApp', {
                 fetch: this._getChartFetch(),
                 sorters: this._getChartSort(),
                 pageSize: 2000,
-                model: this.piType
+                model: 'PortfolioItem/Feature'
             },
             calculatorType: 'Calculator',
             calculatorConfig: {
@@ -155,6 +160,7 @@ Ext.define('FeatureSizingAccuracyChartApp', {
     },
 
     onTimeboxScopeChange: function () {
+        console.log('onTimeboxScopeChange');
         this.callParent(arguments);
 
         var gridBoard = this.down('rallygridboard');
@@ -165,14 +171,17 @@ Ext.define('FeatureSizingAccuracyChartApp', {
     },
 
     _getChartFetch: function () {
-        return ['PreliminaryEstimate', 'Name', 'Value', 'LeafStoryPlanEstimateTotal'];
+        console.log('_getChartFetch');
+        return ['PreliminaryEstimate', 'Name', 'Value', 'LeafStoryPlanEstimateTotal', 'Release'];
     },
 
     _getChartSort: function () {
+        console.log('_getChartSort');
         return [{ property: 'PreliminaryEstimateValue', direction: 'ASC' }];
     },
 
     _getFilters: function () {
+        console.log('_getFilters');
         var queries = [{
             property: 'PreliminaryEstimate',
             operator: '!=',
@@ -180,12 +189,15 @@ Ext.define('FeatureSizingAccuracyChartApp', {
         }];
 
         var timeboxScope = this.getContext().getTimeboxScope();
+        console.log('timeboxScope is', timeboxScope);
         if (timeboxScope && timeboxScope.isApplicable(this.model)) {
+            console.log('timeboxScope IS APPLICABLE');
             queries.push(timeboxScope.getQueryFilter());
         }
         if (this.getSetting('query')) {
             queries.push(Rally.data.QueryFilter.fromQueryString(this.getSetting('query')));
         }
+        console.log('_getFilters - queries =', queries);
         return queries;
     }
 });
