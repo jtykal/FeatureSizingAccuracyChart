@@ -9,8 +9,8 @@ Ext.define('Calculator', {
             totalsData = _.map(groupedPlanEstimateTotals, function (totals, key) {
                 return [key, this._computeMean(totals)];
             }, this),
-            minmaxData = _.map(groupedPlanEstimateTotals, function(totals) {
-                return this._computeMinMax(totals);
+            percentileData = _.map(groupedPlanEstimateTotals, function(totals) {
+                return this._computePercentiles(totals);
             }, this);
 
         return {
@@ -22,9 +22,9 @@ Ext.define('Calculator', {
                     data: totalsData
                 },
                 {
-                    name: 'min - max',
+                    name: 'P25 - P75',
                     type: 'errorbar',
-                    data: minmaxData,
+                    data: percentileData,
                     showInLegend: true
                 }
             ]
@@ -44,13 +44,27 @@ Ext.define('Calculator', {
         }));
     },
 
-    _computeMinMax: function(totals) {
-        var min = totals[0], 
-            max = totals[totals.length-1];
-        if (min === max) {
+    _computePercentiles: function(totals) {
+        var p25 = this._computePercentile(0.25, totals), 
+            p75 = this._computePercentile(0.75, totals);
+
+        if (p25 === p75) {
             return [];
         } else {
-            return [min, max];
+            return [p25, p75];
+        }
+    },
+
+    _computePercentile: function (p, totals) {
+        var index = p * totals.length,
+            floorIndex = Math.floor(index);
+
+        if (totals.length === 1) {
+            return totals[0];
+        } else if(floorIndex === index) {
+            return (totals[floorIndex] + totals[floorIndex - 1]) / 2;
+        } else {
+            return totals[floorIndex];
         }
     },
 
