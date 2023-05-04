@@ -25,48 +25,21 @@ Ext.define('FeatureSizingAccuracyChartApp', {
         Rally.data.wsapi.ModelFactory.getModel({
             type: 'PortfolioItem',
         }).then({
-            success: this._loadMetadata,
+            success: this._onModelLoaded,
             scope: this
         });
     },
 
-    _getLowestLevelPI: function () {
-        console.log('_getLowestLevelPI');
-        return Ext.create('Rally.data.wsapi.Store', {
-            model: 'TypeDefinition',
-            filters: [
-                { property: 'Creatable', value: true },
-                { property: 'Parent.Name', value: 'Portfolio Item' },
-                { property: 'Ordinal', value: 0 }
-            ]
-        }).load().then({
-            success: function (records) {
-                return records[0].get('TypePath');
-            },
-            scope: this
-        });
-    },
-
-    _loadMetadata: function (model) {
+    _onModelLoaded: function (model) {
         this.model = model;
-        console.log('_loadMetadata:  this.model=',this.model);
-        return this._getLowestLevelPI().then({
-            success: this._onMetaRetrieved,
-            scope: this
-        });
-    },
-
-    _onMetaRetrieved: function (piType) {
-        console.log('_onMetaRetrieved, piType=',piType);
-        this.piType = piType;
+        this.piType = 'PortfolioItem/Feature';
         this._addChart();
+
     },
 
     _addChart: function () {
-        console.log('_addChart');
         var context = this.getContext(),
             whiteListFields = ['Milestones', 'Tags'],
-            //modelNames = [this.model.typePath],
             gridBoardConfig = {
                 xtype: 'rallygridboard',
                 toggleState: 'chart',
@@ -102,13 +75,11 @@ Ext.define('FeatureSizingAccuracyChartApp', {
                     filters: this._getFilters()
                 }
             };
-        //console.log('_addChart, modelNames=',modelNames);
         this.add(gridBoardConfig);
     },
 
     _getChartConfig: function () {
-        console.log('_getChartConfig');
-        return {
+        var config = {
             xtype: 'rallychart',
             chartColors: [
                 "#FF8200", // $orange
@@ -157,10 +128,10 @@ Ext.define('FeatureSizingAccuracyChartApp', {
                 }
             }
         };
+        return config;
     },
 
     onTimeboxScopeChange: function () {
-        console.log('onTimeboxScopeChange');
         this.callParent(arguments);
 
         var gridBoard = this.down('rallygridboard');
@@ -171,17 +142,14 @@ Ext.define('FeatureSizingAccuracyChartApp', {
     },
 
     _getChartFetch: function () {
-        console.log('_getChartFetch');
         return ['PreliminaryEstimate', 'Name', 'Value', 'LeafStoryPlanEstimateTotal', 'Release'];
     },
 
     _getChartSort: function () {
-        console.log('_getChartSort');
         return [{ property: 'PreliminaryEstimateValue', direction: 'ASC' }];
     },
 
     _getFilters: function () {
-        console.log('_getFilters');
         var queries = [{
             property: 'PreliminaryEstimate',
             operator: '!=',
@@ -189,15 +157,15 @@ Ext.define('FeatureSizingAccuracyChartApp', {
         }];
 
         var timeboxScope = this.getContext().getTimeboxScope();
-        console.log('timeboxScope is', timeboxScope);
         if (timeboxScope && timeboxScope.isApplicable(this.model)) {
-            console.log('timeboxScope IS APPLICABLE');
             queries.push(timeboxScope.getQueryFilter());
         }
         if (this.getSetting('query')) {
-            queries.push(Rally.data.QueryFilter.fromQueryString(this.getSetting('query')));
+            // queries.push(Rally.data.QueryFilter.fromQueryString(this.getSetting('query')));
+            // Above line replaced with the two below (from CustomChart app) - no change
+            var querySetting = this.getSetting('query').replace(/\{user\}/g, this.getContext().getUser()._ref);
+            queries.push(Rally.data.QueryFilter.fromQueryString(querySetting));
         }
-        console.log('_getFilters - queries =', queries);
         return queries;
     }
 });
